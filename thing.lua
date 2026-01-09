@@ -15,7 +15,7 @@ local Window = Library:CreateWindow({
     Size = UDim2.fromOffset(520, 420),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.End
+    MinimizeKey = Enum.KeyCode.RCtrl
 })
 
 
@@ -24,7 +24,7 @@ local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
 SettingsTab:AddParagraph({
     Title = "UI Toggle",
-    Content = "Press END to open / close the menu"
+    Content = "Press RCtrl to open / close the menu"
 })
 
 
@@ -191,3 +191,4 @@ for _, p in ipairs(Players:GetPlayers()) do
         })
     end
 end
+
