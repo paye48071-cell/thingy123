@@ -1,7 +1,10 @@
+-- for personal use
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+
 
 local Library = loadstring(game:HttpGet(
     "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
@@ -11,23 +14,32 @@ local Window = Library:CreateWindow({
     Title = "Gankware",
     SubTitle = "fuck you",
     TabWidth = 160,
-    Size = UDim2.fromOffset(520, 420),
+    Size = UDim2.fromOffset(540, 460),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl 
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
-
 
 local MainTab = Window:AddTab({ Title = "Main", Icon = "eye" })
 local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "settings" })
 
+Window:SelectTab(MainTab)
+
 SettingsTab:AddParagraph({
     Title = "UI Toggle",
-    Content = "Press LCtril to open / close the menu"
+    Content = "Press LEFT CTRL to open / close the menu"
 })
 
 
 local ESP_ENABLED = false
+local SHOW_HEALTH_BAR = true
+local SHOW_HEALTH_TEXT = true
+local SHOW_DISTANCE_TEXT = true
+
+local ESP_COLOR = Color3.fromRGB(255,255,255)
+local INFO_COLOR = Color3.fromRGB(200,200,200)
+
+
 local BASE_FOV = 70
 local ESP = {}
 
@@ -46,18 +58,18 @@ local function createESP(player)
 
     e.Box.Thickness = 1
     e.Box.Filled = false
-    e.Box.Color = Color3.fromRGB(255,255,255)
+    e.Box.Color = ESP_COLOR
 
     e.Name.Size = 13
     e.Name.Center = true
     e.Name.Outline = true
-    e.Name.Color = Color3.fromRGB(255,255,255)
+    e.Name.Color = ESP_COLOR
     e.Name.Text = player.Name
 
     e.Info.Size = 12
     e.Info.Center = true
     e.Info.Outline = true
-    e.Info.Color = Color3.fromRGB(200,200,200)
+    e.Info.Color = INFO_COLOR
 
     e.Health.Filled = true
     e.HealthOutline.Thickness = 1
@@ -73,7 +85,8 @@ local function removeESP(player)
     end
 end
 
-MainTab:AddToggle("ESP", {
+
+MainTab:AddToggle("ESPEnabled", {
     Title = "Enable ESP",
     Default = false,
     Callback = function(v)
@@ -84,6 +97,42 @@ MainTab:AddToggle("ESP", {
                     d.Visible = false
                 end
             end
+        end
+    end
+})
+
+MainTab:AddToggle("HealthBar", {
+    Title = "Show Health Bar",
+    Default = true,
+    Callback = function(v)
+        SHOW_HEALTH_BAR = v
+    end
+})
+
+MainTab:AddToggle("HealthText", {
+    Title = "Show Health Text",
+    Default = true,
+    Callback = function(v)
+        SHOW_HEALTH_TEXT = v
+    end
+})
+
+MainTab:AddToggle("DistanceText", {
+    Title = "Show Distance",
+    Default = true,
+    Callback = function(v)
+        SHOW_DISTANCE_TEXT = v
+    end
+})
+
+MainTab:AddColorpicker("ESPColor", {
+    Title = "ESP Color",
+    Default = ESP_COLOR,
+    Callback = function(col)
+        ESP_COLOR = col
+        for _, e in pairs(ESP) do
+            e.Box.Color = col
+            e.Name.Color = col
         end
     end
 })
@@ -118,29 +167,50 @@ RunService.RenderStepped:Connect(function()
             e.Name.Position = Vector2.new(pos.X, y - 14)
             e.Name.Visible = true
 
-            local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-            local barH = height * hp
 
-            e.HealthOutline.Size = Vector2.new(4, height)
-            e.HealthOutline.Position = Vector2.new(x - 6, y)
-            e.HealthOutline.Visible = true
+            if SHOW_HEALTH_BAR then
+                local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                local barH = height * hp
 
-            e.Health.Size = Vector2.new(2, barH)
-            e.Health.Position = Vector2.new(x - 5, y + (height - barH))
-            e.Health.Color = Color3.fromRGB(
-                255 * (1 - hp),
-                255 * hp,
-                0
-            )
-            e.Health.Visible = true
+                e.HealthOutline.Size = Vector2.new(4, height)
+                e.HealthOutline.Position = Vector2.new(x - 6, y)
+                e.HealthOutline.Visible = true
 
-            e.Info.Text =
-                math.floor(hum.Health) .. "/" ..
-                math.floor(hum.MaxHealth) ..
-                " | " .. math.floor(dist) .. "m"
+                e.Health.Size = Vector2.new(2, barH)
+                e.Health.Position = Vector2.new(x - 5, y + (height - barH))
+                e.Health.Color = Color3.fromRGB(
+                    255 * (1 - hp),
+                    255 * hp,
+                    0
+                )
+                e.Health.Visible = true
+            else
+                e.Health.Visible = false
+                e.HealthOutline.Visible = false
+            end
 
-            e.Info.Position = Vector2.new(pos.X, y + height + 2)
-            e.Info.Visible = true
+
+            local parts = {}
+
+            if SHOW_HEALTH_TEXT then
+                table.insert(parts,
+                    math.floor(hum.Health) .. "/" .. math.floor(hum.MaxHealth)
+                )
+            end
+
+            if SHOW_DISTANCE_TEXT then
+                table.insert(parts,
+                    math.floor(dist) .. "m"
+                )
+            end
+
+            if #parts > 0 then
+                e.Info.Text = table.concat(parts, " | ")
+                e.Info.Position = Vector2.new(pos.X, y + height + 2)
+                e.Info.Visible = true
+            else
+                e.Info.Visible = false
+            end
         else
             for _, d in pairs(e) do d.Visible = false end
         end
@@ -156,28 +226,53 @@ Players.PlayerAdded:Connect(createESP)
 Players.PlayerRemoving:Connect(removeESP)
 
 
-local SpectateSection = MainTab:AddSection("Spectate")
 local spectating = nil
 
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then
-        SpectateSection:AddButton({
-            Title = p.Name,
-            Callback = function()
-                if spectating == p then
-                    local hum = LocalPlayer.Character
-                        and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then Camera.CameraSubject = hum end
-                    spectating = nil
-                else
-                    local hum = p.Character
-                        and p.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        Camera.CameraSubject = hum
-                        spectating = p
-                    end
-                end
-            end
-        })
+local function getPlayerNames()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.Name)
+        end
     end
+    return list
 end
+
+local SpectateDropdown = MainTab:AddDropdown("SpectatePlayer", {
+    Title = "Spectate Player",
+    Values = getPlayerNames(),
+    Multi = false,
+    Default = nil,
+    Callback = function(name)
+        local player = Players:FindFirstChild(name)
+        if not player then return end
+
+        if spectating == player then
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            spectating = nil
+            SpectateDropdown:SetValue(nil)
+        else
+            local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                Camera.CameraSubject = hum
+                spectating = player
+            end
+        end
+    end
+})
+
+MainTab:AddButton({
+    Title = "Stop Spectating",
+    Callback = function()
+        Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        spectating = nil
+        SpectateDropdown:SetValue(nil)
+    end
+})
+
+local function refreshSpectateList()
+    SpectateDropdown:SetValues(getPlayerNames())
+end
+
+Players.PlayerAdded:Connect(refreshSpectateList)
+Players.PlayerRemoving:Connect(refreshSpectateList)
