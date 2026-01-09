@@ -15,7 +15,7 @@ local Window = Library:CreateWindow({
     Size = UDim2.fromOffset(520, 420),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RCtrl
+    MinimizeKey = Enum.KeyCode.RightControl
 })
 
 
@@ -191,4 +191,5 @@ for _, p in ipairs(Players:GetPlayers()) do
         })
     end
 end
+
 
